@@ -6,3 +6,4 @@
 
 from app.domain.geo import models as geo  # noqa: F401
 from app.domain.suppliers import models as suppliers  # noqa: F401
+from app.domain.users import models as users  # noqa: F401
