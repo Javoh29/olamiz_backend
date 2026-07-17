@@ -15,11 +15,11 @@ class Settings(BaseSettings):
 
     # --- Приложение ---
     debug: bool = False
-    base_url: str = "https://rento.uz"
+    base_url: str = "https://olamiz.uz"
     display_timezone: str = "Asia/Tashkent"  # хранение — всегда UTC
 
     # --- Инфраструктура ---
-    database_url: str = "postgresql+asyncpg://rento:rento@localhost:5432/rento"
+    database_url: str = "postgresql+asyncpg://olamiz:olamiz@localhost:5432/olamiz"
     redis_url: str = "redis://localhost:6379/0"
 
     # --- Auth: JWT + OTP ---
@@ -56,12 +56,12 @@ class Settings(BaseSettings):
     s3_endpoint: str = "http://localhost:9000"
     s3_access_key: str = "minioadmin"
     s3_secret_key: str = "minioadmin"
-    s3_bucket: str = "rento"
+    s3_bucket: str = "olamiz"
 
     # --- Наблюдаемость ---
     sentry_dsn: str = ""
 
-    # --- Telegram-бот прокатчика ---
+    # --- Telegram-бот прокатчика (бренд Beramiz, @beramiz_bot — D21) ---
     tg_bot_token: str = ""
     tg_webhook_secret: str = ""
 
