@@ -17,6 +17,7 @@ dependencies = [
     "sqladmin>=0.20",
     "aioboto3>=13.2",
     "httpx>=0.28",
+    "pyjwt>=2.13.0",
 ]
 
 [dependency-groups]
@@ -25,6 +26,7 @@ dev = [
     "mypy>=1.13",
     "pytest>=8.3",
     "pytest-asyncio>=0.24",
+    "fakeredis>=2.36.2",
 ]
 
 [tool.uv]
@@ -63,6 +65,11 @@ check_untyped_defs = true
 warn_unused_ignores = true
 warn_redundant_casts = true
 no_implicit_optional = true
+
+[[tool.mypy.overrides]]
+# Сторонние пакеты без type-стабов (используются только в тестовом харнессе).
+module = ["asyncpg.*"]
+ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
 # mypy не поддерживает strict в per-module overrides — перечислены сами strict-флаги.

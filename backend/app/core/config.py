@@ -23,12 +23,13 @@ class Settings(BaseSettings):
     redis_url: str = "redis://localhost:6379/0"
 
     # --- Auth: JWT + OTP ---
-    jwt_secret: str = "change-me"
+    jwt_secret: str = "change-me-in-production-use-32-bytes-or-more"
     jwt_access_ttl_min: int = 30
     jwt_refresh_ttl_days: int = 30
     otp_ttl_min: int = 5
     otp_rate_per_phone_hour: int = 3
     otp_rate_per_ip_hour: int = 10
+    offer_version: str = "2026-07"  # версия публичной оферты; акцепт фиксируется при регистрации
 
     # --- Тайминги сделки и эскалаций ---
     escalate_sms_min: int = 3
