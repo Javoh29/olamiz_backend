@@ -1,0 +1,85 @@
+[project]
+name = "rento-backend"
+version = "0.1.0"
+description = "Rento — маркетплейс аренды строительного инструмента (backend: API, бот, SSR, админка, worker)"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+    "sqlalchemy[asyncio]>=2.0.36",
+    "asyncpg>=0.30",
+    "alembic>=1.14",
+    "pydantic-settings>=2.6",
+    "aiogram>=3.15",
+    "arq>=0.26",
+    "redis>=5.2",
+    "jinja2>=3.1",
+    "sqladmin>=0.20",
+    "aioboto3>=13.2",
+    "httpx>=0.28",
+]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.8",
+    "mypy>=1.13",
+    "pytest>=8.3",
+    "pytest-asyncio>=0.24",
+]
+
+[tool.uv]
+# Приложение, не библиотека: сам проект не собираем и не устанавливаем.
+package = false
+
+# --- Ruff: lint + format ---
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = [
+    "E", "W",  # pycodestyle
+    "F",       # pyflakes
+    "I",       # isort
+    "UP",      # pyupgrade
+    "B",       # bugbear
+    "SIM",     # simplify
+    "C4",      # comprehensions
+    "RUF",     # ruff-specific
+]
+ignore = [
+    # Комментарии и docstrings в проекте — на русском; проверка «похожих» юникод-символов не нужна
+    "RUF001", "RUF002", "RUF003",
+]
+
+# --- mypy: strict на domain-слое (CLAUDE.md «Конвенции») ---
+
+[tool.mypy]
+python_version = "3.12"
+files = ["app", "tests"]
+plugins = ["pydantic.mypy"]
+check_untyped_defs = true
+warn_unused_ignores = true
+warn_redundant_casts = true
+no_implicit_optional = true
+
+[[tool.mypy.overrides]]
+# mypy не поддерживает strict в per-module overrides — перечислены сами strict-флаги.
+module = "app.domain.*"
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+disallow_untyped_calls = true
+disallow_untyped_decorators = true
+disallow_any_generics = true
+disallow_subclassing_any = true
+warn_return_any = true
+no_implicit_reexport = true
+strict_equality = true
+
+# --- pytest ---
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
