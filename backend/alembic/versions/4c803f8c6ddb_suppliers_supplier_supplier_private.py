@@ -1,8 +1,8 @@
 """suppliers: supplier + supplier_private
 
-Revision ID: 7aa43a5c705f
-Revises: 2e09bc0e922c
-Create Date: 2026-07-17 23:11:00.689444
+Revision ID: 4c803f8c6ddb
+Revises: a7fe07680a40
+Create Date: 2026-07-17 23:21:21.548431
 
 """
 
@@ -13,8 +13,8 @@ import sqlalchemy as sa
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision: str = "7aa43a5c705f"
-down_revision: str | Sequence[str] | None = "2e09bc0e922c"
+revision: str = "4c803f8c6ddb"
+down_revision: str | Sequence[str] | None = "a7fe07680a40"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
@@ -66,11 +66,10 @@ def upgrade() -> None:
             nullable=False,
         ),
         sa.ForeignKeyConstraint(
-            ["district_id"],
-            ["districts.id"],
+            ["district_id"], ["districts.id"], name=op.f("fk_suppliers_district_id_districts")
         ),
-        sa.PrimaryKeyConstraint("id"),
-        sa.UniqueConstraint("tg_chat_id"),
+        sa.PrimaryKeyConstraint("id", name=op.f("pk_suppliers")),
+        sa.UniqueConstraint("tg_chat_id", name=op.f("uq_suppliers_tg_chat_id")),
     )
     op.create_index(op.f("ix_suppliers_district_id"), "suppliers", ["district_id"], unique=False)
     op.create_table(
@@ -85,8 +84,13 @@ def upgrade() -> None:
             server_default=sa.text("now()"),
             nullable=False,
         ),
-        sa.ForeignKeyConstraint(["supplier_id"], ["suppliers.id"], ondelete="CASCADE"),
-        sa.PrimaryKeyConstraint("supplier_id"),
+        sa.ForeignKeyConstraint(
+            ["supplier_id"],
+            ["suppliers.id"],
+            name=op.f("fk_supplier_private_supplier_id_suppliers"),
+            ondelete="CASCADE",
+        ),
+        sa.PrimaryKeyConstraint("supplier_id", name=op.f("pk_supplier_private")),
     )
     # ### end Alembic commands ###
 

@@ -1,8 +1,8 @@
 """geo: regions, cities, districts
 
-Revision ID: 2e09bc0e922c
+Revision ID: a7fe07680a40
 Revises:
-Create Date: 2026-07-17 22:43:07.660517
+Create Date: 2026-07-17 23:21:01.433681
 
 """
 
@@ -13,7 +13,7 @@ import sqlalchemy as sa
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision: str = "2e09bc0e922c"
+revision: str = "a7fe07680a40"
 down_revision: str | Sequence[str] | None = None
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
@@ -27,7 +27,7 @@ def upgrade() -> None:
         sa.Column("id", sa.Integer(), nullable=False),
         sa.Column("name_ru", sa.String(length=100), nullable=False),
         sa.Column("name_uz", sa.String(length=100), nullable=False),
-        sa.PrimaryKeyConstraint("id"),
+        sa.PrimaryKeyConstraint("id", name=op.f("pk_regions")),
     )
     op.create_table(
         "cities",
@@ -35,8 +35,13 @@ def upgrade() -> None:
         sa.Column("region_id", sa.Integer(), nullable=False),
         sa.Column("name_ru", sa.String(length=100), nullable=False),
         sa.Column("name_uz", sa.String(length=100), nullable=False),
-        sa.ForeignKeyConstraint(["region_id"], ["regions.id"], ondelete="CASCADE"),
-        sa.PrimaryKeyConstraint("id"),
+        sa.ForeignKeyConstraint(
+            ["region_id"],
+            ["regions.id"],
+            name=op.f("fk_cities_region_id_regions"),
+            ondelete="CASCADE",
+        ),
+        sa.PrimaryKeyConstraint("id", name=op.f("pk_cities")),
     )
     op.create_index(op.f("ix_cities_region_id"), "cities", ["region_id"], unique=False)
     op.create_table(
@@ -45,8 +50,10 @@ def upgrade() -> None:
         sa.Column("city_id", sa.Integer(), nullable=False),
         sa.Column("name_ru", sa.String(length=100), nullable=False),
         sa.Column("name_uz", sa.String(length=100), nullable=False),
-        sa.ForeignKeyConstraint(["city_id"], ["cities.id"], ondelete="CASCADE"),
-        sa.PrimaryKeyConstraint("id"),
+        sa.ForeignKeyConstraint(
+            ["city_id"], ["cities.id"], name=op.f("fk_districts_city_id_cities"), ondelete="CASCADE"
+        ),
+        sa.PrimaryKeyConstraint("id", name=op.f("pk_districts")),
     )
     op.create_index(op.f("ix_districts_city_id"), "districts", ["city_id"], unique=False)
     # ### end Alembic commands ###
