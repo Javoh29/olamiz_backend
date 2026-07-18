@@ -34,17 +34,35 @@ Docker на машине разработки не установлен → Post
 - **Тексты пользователю** — в словаре `core/i18n` (ru/uz), не хардкод.
 - **Тесты**: тестовая БД с savepoint-rollback на тест, `fakeredis` вместо Redis, httpx ASGI.
 - **Добавленные зависимости**: `pyjwt` (runtime), `fakeredis` (dev).
+- **Ранжирование** — единственная формула в `domain/catalog/ranking.py` (architecture.md §7):
+  под-скоры нормированы в [0,1], веса из конфига (`rank_w1..w4`), сигналы расцеплены с ORM
+  (`RankingSignals`) → тестируется без БД. Новичок без истории → нейтрально (0.5). Сортировка
+  выдачи — в приложении (масштаб MVP смешной), не в SQL.
+- **S3/MinIO** — `core/storage.py`: presigned GET на чтение фото (SigV4). Presign — локальная
+  подпись, без похода в S3, поэтому тестируется офлайн. Загрузка объектов — server-side позже.
+- **Скрытие телефона** — сейм `service.supplier_phone_visible()` (domain), сейчас всегда `False`
+  (броней нет); станет запросом к bookings при появлении модуля. Скрытие на сервере, не клиенте.
+- **Публичный каталог** — деталка/лента браузятся анонимно (`OptionalUser`: нет/битый токен → аноним).
 
 ## Порядок модулей (domain)
 
-geo ✓ → suppliers ✓ → users/auth ✓ → catalog (категории ✓, listings/units — в работе) →
-booking (статусная машина) → checklists → reviews → notifications → disputes.
+geo ✓ → suppliers ✓ → users/auth ✓ → catalog ✓ (категории, listings/units/photo, ranking,
+эндпоинты ленты/деталки, storage) → booking (статусная машина) → checklists → reviews →
+notifications → disputes.
 
 ## Отложено / открытые вопросы
 
 - nginx-домены `olamiz.uz` + `beramiz.uz` (beramiz в v1.0 — редирект/заглушка) — отложено.
 - Реальные SMS-провайдеры (Eskiz/PlayMobile) — сейчас `LogSmsGateway`-заглушка.
-- Скрытие телефона прокатчика (backend.md §10.3) — тестируется полноценно после booking.
+- Скрытие телефона прокатчика (backend.md §10.3) — тестируется полноценно после booking
+  (сейчас `supplier_phone_visible` всегда False; нужен позитивный тест «телефон виден
+  при подтверждённой брони» с booking-модулем).
+- `GET /catalog/listings/{id}/availability` (backend.md §5) — **отложено в booking**: занятые
+  интервалы берутся из броней, форма ответа зависит от модели booking.
+- Фильтр каталога по категории — точное совпадение; раскрытие в поддерево (родитель → листья)
+  и полнотекст по title (сейчас ILIKE) — задел на потом.
+- Загрузка фото карточек (multipart → MinIO) — придёт с админкой/ботом; публичный API отдаёт
+  только presigned на чтение. `ListingPhoto.url` трактуем как S3-ключ объекта.
 - Папка репозитория называется `rento_backend` — переименование силами владельца после сессии.
 
 ## Журнал сессий
@@ -56,3 +74,6 @@ booking (статусная машина) → checklists → reviews → notific
   (OTP/JWT/me, явный акцепт оферты), catalog·категории (+сиды дерева инструмента).
 - Введён `naming_convention`, миграции перегенерированы.
 - Dev-инфра поднята через brew (Postgres/Redis/MinIO), т.к. Docker не установлен.
+- Catalog добит: `ranking.py` (формула §7 + тесты), `core/storage.py` (presigned SigV4),
+  эндпоинты `GET /catalog/listings` (фильтры category/district/q, сортировка по score) и
+  `GET /catalog/listings/{id}` (скрытие телефона, 404 на неактивную). Тесты: 27 → 48.

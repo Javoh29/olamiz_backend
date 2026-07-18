@@ -67,8 +67,8 @@ warn_redundant_casts = true
 no_implicit_optional = true
 
 [[tool.mypy.overrides]]
-# Сторонние пакеты без type-стабов (используются только в тестовом харнессе).
-module = ["asyncpg.*"]
+# Сторонние пакеты без type-стабов (тестовый харнесс, S3-клиент).
+module = ["asyncpg.*", "aioboto3.*", "aiobotocore.*", "botocore.*"]
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]

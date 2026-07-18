@@ -4,6 +4,7 @@ from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.domain.catalog.models import DepositKind
 from app.domain.users.models import UserLanguage
 
 # Узбекский номер в E.164: +998 и 9 цифр.
@@ -68,3 +69,43 @@ class CategoryOut(BaseModel):
 
 
 CategoryOut.model_rebuild()
+
+
+class ListingItemOut(BaseModel):
+    """Карточка в ленте каталога (телефон прокатчика тут не отдаётся никогда)."""
+
+    id: int
+    title: str
+    price_per_day: int
+    deposit_kind: DepositKind
+    deposit_amount: int | None
+    rating: Decimal | None
+    district_id: int
+    supplier_name: str
+    thumbnail: str | None  # presigned URL первого фото, если есть
+
+
+class SupplierPublicOut(BaseModel):
+    id: int
+    display_name: str
+    district_id: int
+    rating: Decimal | None
+    # Телефон — ТОЛЬКО у клиента с подтверждённой бронью этой карточки (backend.md §5);
+    # иначе None. Скрытие — на сервере, не на клиенте.
+    phone: str | None = None
+
+
+class ListingDetailOut(BaseModel):
+    id: int
+    title: str
+    description: str | None
+    price_per_day: int
+    deposit_kind: DepositKind
+    deposit_amount: int | None
+    quantity: int
+    rating: Decimal | None
+    fits_photo_pct: Decimal | None
+    slug: str
+    category_id: int
+    photos: list[str]  # presigned URLs
+    supplier: SupplierPublicOut

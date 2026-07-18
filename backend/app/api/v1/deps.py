@@ -44,3 +44,23 @@ async def get_current_user(
 
 
 CurrentUser = Annotated[User, Depends(get_current_user)]
+
+
+async def get_optional_user(
+    session: SessionDep,
+    credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(_bearer)],
+) -> User | None:
+    """Публичные эндпоинты каталога: браузятся анонимно, токен опционален.
+
+    Отсутствие/невалидность токена → аноним (None), а не 401 — витрину смотрят без входа.
+    """
+    if credentials is None:
+        return None
+    try:
+        user_id = decode_token(credentials.credentials, "access")
+    except TokenError:
+        return None
+    return await service.get_by_id(session, user_id)
+
+
+OptionalUser = Annotated[User | None, Depends(get_optional_user)]

@@ -73,3 +73,12 @@ def unauthorized() -> ApiError:
         "Требуется авторизация.",
         "Avtorizatsiya talab qilinadi.",
     )
+
+
+def listing_not_found() -> ApiError:
+    return ApiError(
+        404,
+        "listing_not_found",
+        "Карточка не найдена.",
+        "E'lon topilmadi.",
+    )
