@@ -55,3 +55,16 @@ class MeOut(BaseModel):
 class MePatchIn(BaseModel):
     name: str | None = Field(default=None, max_length=255)
     language: UserLanguage | None = None
+
+
+class CategoryOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    name_ru: str
+    name_uz: str
+    slug: str
+    children: list["CategoryOut"] = []
+
+
+CategoryOut.model_rebuild()
