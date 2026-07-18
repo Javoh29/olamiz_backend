@@ -17,6 +17,14 @@ class OtpRequestIn(BaseModel):
 class OtpVerifyIn(BaseModel):
     phone: str = Field(pattern=PHONE_PATTERN)
     code: str = Field(pattern=r"^\d{6}$")
+    # Акцепт оферты обязателен только при регистрации нового клиента;
+    # offer_version — версия, которую клиент показал пользователю (фиксируется в acceptance).
+    offer_accepted: bool = False
+    offer_version: str | None = None
+
+
+class OfferOut(BaseModel):
+    version: str
 
 
 class RefreshIn(BaseModel):

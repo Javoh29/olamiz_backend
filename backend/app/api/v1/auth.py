@@ -6,8 +6,22 @@
 from fastapi import APIRouter, Request
 
 from app.api.v1.deps import RedisDep, SessionDep, SmsDep
-from app.api.v1.errors import otp_invalid, otp_rate_limited, token_invalid
-from app.api.v1.schemas import OkResponse, OtpRequestIn, OtpVerifyIn, RefreshIn, TokenPair
+from app.api.v1.errors import (
+    offer_outdated,
+    offer_required,
+    otp_invalid,
+    otp_rate_limited,
+    token_invalid,
+)
+from app.api.v1.schemas import (
+    OfferOut,
+    OkResponse,
+    OtpRequestIn,
+    OtpVerifyIn,
+    RefreshIn,
+    TokenPair,
+)
+from app.core.config import get_settings
 from app.core.i18n import t
 from app.core.security import (
     OtpRateLimitError,
@@ -36,8 +50,23 @@ async def otp_request(
     return OkResponse()
 
 
+@router.get("/offer", response_model=OfferOut)
+async def offer() -> OfferOut:
+    """Текущая версия публичной оферты — клиент показывает её и присылает при регистрации."""
+    return OfferOut(version=get_settings().offer_version)
+
+
 @router.post("/otp/verify", response_model=TokenPair)
 async def otp_verify(payload: OtpVerifyIn, redis: RedisDep, session: SessionDep) -> TokenPair:
+    # Для нового клиента требуем акцепт оферты ДО проверки кода (не расходуем код зря).
+    if await service.get_by_phone(session, payload.phone) is None:
+        try:
+            service.validate_offer_for_registration(payload.offer_accepted, payload.offer_version)
+        except service.OfferRequired as exc:
+            raise offer_required() from exc
+        except service.OfferVersionMismatch as exc:
+            raise offer_outdated(exc.current) from exc
+
     if not await verify_code(redis, payload.phone, payload.code):
         raise otp_invalid()
     user, _ = await service.get_or_create(session, payload.phone)

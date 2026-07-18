@@ -39,6 +39,24 @@ def otp_invalid() -> ApiError:
     )
 
 
+def offer_required() -> ApiError:
+    return ApiError(
+        400,
+        "offer_required",
+        "Нужно принять условия публичной оферты.",
+        "Ommaviy ofertani qabul qilish kerak.",
+    )
+
+
+def offer_outdated(current: str) -> ApiError:
+    return ApiError(
+        409,
+        "offer_outdated",
+        f"Оферта обновлена (актуальная версия {current}). Обновите приложение.",
+        f"Oferta yangilandi (joriy versiya {current}). Ilovani yangilang.",
+    )
+
+
 def token_invalid() -> ApiError:
     return ApiError(
         401,

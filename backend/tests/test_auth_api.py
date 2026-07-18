@@ -6,12 +6,29 @@ from httpx import AsyncClient
 PHONE = "+998901112233"
 
 
+async def _current_offer(client: AsyncClient) -> str:
+    resp = await client.get("/api/v1/auth/offer")
+    assert resp.status_code == 200
+    version: str = resp.json()["version"]
+    return version
+
+
 async def _login(client: AsyncClient, redis: fakeredis.aioredis.FakeRedis) -> dict[str, str]:
     await client.post("/api/v1/auth/otp/request", json={"phone": PHONE})
     code = await redis.get(f"otp:code:{PHONE}")
-    resp = await client.post("/api/v1/auth/otp/verify", json={"phone": PHONE, "code": code})
+    version = await _current_offer(client)
+    resp = await client.post(
+        "/api/v1/auth/otp/verify",
+        json={"phone": PHONE, "code": code, "offer_accepted": True, "offer_version": version},
+    )
     assert resp.status_code == 200
     return resp.json()
+
+
+async def test_offer_endpoint(client: AsyncClient) -> None:
+    from app.core.config import get_settings
+
+    assert await _current_offer(client) == get_settings().offer_version
 
 
 async def test_full_flow(client: AsyncClient, redis: fakeredis.aioredis.FakeRedis) -> None:
@@ -21,8 +38,12 @@ async def test_full_flow(client: AsyncClient, redis: fakeredis.aioredis.FakeRedi
 
     code = await redis.get(f"otp:code:{PHONE}")
     assert code is not None
+    version = await _current_offer(client)
 
-    resp = await client.post("/api/v1/auth/otp/verify", json={"phone": PHONE, "code": code})
+    resp = await client.post(
+        "/api/v1/auth/otp/verify",
+        json={"phone": PHONE, "code": code, "offer_accepted": True, "offer_version": version},
+    )
     assert resp.status_code == 200
     access = resp.json()["access_token"]
 
@@ -34,11 +55,62 @@ async def test_full_flow(client: AsyncClient, redis: fakeredis.aioredis.FakeRedi
     assert body["deals_count"] == 0
 
 
+async def test_register_requires_offer(
+    client: AsyncClient, redis: fakeredis.aioredis.FakeRedis
+) -> None:
+    await client.post("/api/v1/auth/otp/request", json={"phone": PHONE})
+    code = await redis.get(f"otp:code:{PHONE}")
+    resp = await client.post(
+        "/api/v1/auth/otp/verify",
+        json={"phone": PHONE, "code": code, "offer_accepted": False},
+    )
+    assert resp.status_code == 400
+    assert resp.json()["code"] == "offer_required"
+    # код не израсходован — с принятой офертой тот же код проходит
+    version = await _current_offer(client)
+    resp = await client.post(
+        "/api/v1/auth/otp/verify",
+        json={"phone": PHONE, "code": code, "offer_accepted": True, "offer_version": version},
+    )
+    assert resp.status_code == 200
+
+
+async def test_register_offer_version_outdated(
+    client: AsyncClient, redis: fakeredis.aioredis.FakeRedis
+) -> None:
+    await client.post("/api/v1/auth/otp/request", json={"phone": PHONE})
+    code = await redis.get(f"otp:code:{PHONE}")
+    resp = await client.post(
+        "/api/v1/auth/otp/verify",
+        json={"phone": PHONE, "code": code, "offer_accepted": True, "offer_version": "1999-01"},
+    )
+    assert resp.status_code == 409
+    assert resp.json()["code"] == "offer_outdated"
+
+
+async def test_existing_user_logs_in_without_offer(
+    client: AsyncClient, redis: fakeredis.aioredis.FakeRedis
+) -> None:
+    await _login(client, redis)  # регистрация с офертой
+    # повторный вход того же клиента — оферта уже принята, флаг не нужен
+    await client.post("/api/v1/auth/otp/request", json={"phone": PHONE})
+    code = await redis.get(f"otp:code:{PHONE}")
+    resp = await client.post(
+        "/api/v1/auth/otp/verify",
+        json={"phone": PHONE, "code": code, "offer_accepted": False},
+    )
+    assert resp.status_code == 200
+
+
 async def test_verify_invalid_code_error_format(
     client: AsyncClient, redis: fakeredis.aioredis.FakeRedis
 ) -> None:
     await client.post("/api/v1/auth/otp/request", json={"phone": PHONE})
-    resp = await client.post("/api/v1/auth/otp/verify", json={"phone": PHONE, "code": "000000"})
+    version = await _current_offer(client)
+    resp = await client.post(
+        "/api/v1/auth/otp/verify",
+        json={"phone": PHONE, "code": "000000", "offer_accepted": True, "offer_version": version},
+    )
     assert resp.status_code == 400
     body = resp.json()
     assert body["code"] == "otp_invalid"
